@@ -385,6 +385,12 @@
     function startSystem() {
         if (phase !== "idle") return;
         
+        // --- THÊM 3 DÒNG NÀY ĐỂ MỞ KHÓA GIỌNG NÓI ---
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+        }
+        // -------------------------------------------
+        
         prepSecs = parseInt(document.getElementById('prepInput').value) || 60;
         turnSecs = 30;
         totalSecs = 180; 
