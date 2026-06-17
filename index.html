@@ -492,20 +492,31 @@
 
     function speakGermanMale(text) {
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel(); // Dọn dẹp âm thanh cũ bị kẹt
+            
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'de-DE';
-            utterance.rate = 0.95;
+            utterance.lang = 'de-DE'; // Ép ngôn ngữ tiếng Đức
+            utterance.rate = 0.9;     // Chỉnh tốc độ đọc (1 là bình thường, 0.9 là hơi chậm rải chữ)
             
-            const voices = window.speechSynthesis.getVoices();
-            const deVoices = voices.filter(v => v.lang.startsWith('de'));
-            let maleVoice = deVoices.find(v => 
-                v.name.includes('Google') || v.name.toLowerCase().includes('male') || 
-                v.name.toLowerCase().includes('männlich') || v.name.includes('Conrad') || v.name.includes('Stefan')
-            );
+            // Lấy danh sách giọng có sẵn trong máy
+            let voices = window.speechSynthesis.getVoices();
             
-            if (maleVoice) utterance.voice = maleVoice;
-            else if (deVoices.length > 0) utterance.voice = deVoices[0];
+            // Lọc ra các giọng đọc tiếng Đức
+            let deVoices = voices.filter(v => v.lang.startsWith('de'));
+            
+            if (deVoices.length > 0) {
+                // Ưu tiên tìm giọng Nam hoặc giọng Google
+                let maleVoice = deVoices.find(v => 
+                    v.name.toLowerCase().includes('google') || 
+                    v.name.toLowerCase().includes('male') || 
+                    v.name.toLowerCase().includes('männlich') || 
+                    v.name.includes('Conrad') || 
+                    v.name.includes('Stefan')
+                );
+                
+                // Nếu có giọng nam thì dùng, không thì lấy đại giọng tiếng Đức đầu tiên tìm được
+                utterance.voice = maleVoice ? maleVoice : deVoices[0];
+            }
             
             window.speechSynthesis.speak(utterance);
         }
