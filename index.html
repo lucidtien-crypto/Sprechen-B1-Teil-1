@@ -148522,7 +148522,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 300);
 });
 
-// === TÍNH NĂNG LUYỆN NÓI (SPRECHEN-CHECK) ===
+// === TÍNH NĂNG LUYỆN NÓI (SPRECHEN-CHECK VỚI LIVE TEXT) ===
 function startSpeechPractice(targetText) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -148532,19 +148532,40 @@ function startSpeechPractice(targetText) {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'de-DE'; // Đặt chuẩn tiếng Đức
-    recognition.interimResults = false;
+    recognition.interimResults = true; // Bật hiển thị chữ theo thời gian thực (giống Google Translate)
     recognition.maxAlternatives = 1;
 
-    showCustomAlert("🎤 Đang lắng nghe... Hãy đọc to câu tiếng Đức của bạn!", "Sprechen-Check", "🗣️");
+    // Hiển thị khung popup ban đầu
+    showCustomAlert("🎤 Đang lắng nghe... Hãy nói câu tiếng Đức của bạn!", "Sprechen-Check (Live)", "🗣️");
 
     recognition.onresult = (event) => {
-        const spokenText = event.results[0][0].transcript.toLowerCase();
-        const cleanTarget = targetText.toLowerCase().replace(/[.,!?:;()[\]"']/g, '');
+        let interimText = '';
+        let finalText = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalText += event.results[i][0].transcript;
+            } else {
+                interimText += event.results[i][0].transcript;
+            }
+        }
+
+        const currentSpoken = (finalText || interimText).toLowerCase();
         
-        if (spokenText.includes(cleanTarget) || cleanTarget.includes(spokenText)) {
-            showCustomAlert(`🎉 Xuất sắc! Phát âm rất chuẩn.\n(Bạn nói: "${spokenText}")`, "Kết quả Sprechen", "✅");
-        } else {
-            showCustomAlert(`❌ Chưa chính xác lắm, thử lại nhé!\n(Bạn nói: "${spokenText}"\nĐúng là: "${targetText}")`, "Kết quả Sprechen", "🔄");
+        // Cập nhật chữ hiện trực tiếp lên popup thông báo theo thời gian thực
+        const messageBox = document.getElementById('alert-message');
+        if (messageBox) {
+            messageBox.innerHTML = `🎤 Đang nghe bạn nói:<br><b style="color: #38bdf8; font-size: 17px; margin-top: 6px; display: inline-block;">"${currentSpoken}"</b>`;
+        }
+
+        // Khi bạn đọc xong câu (final)
+        if (finalText) {
+            const cleanTarget = targetText.toLowerCase().replace(/[.,!?:;()[\]"']/g, '');
+            if (currentSpoken.includes(cleanTarget) || cleanTarget.includes(currentSpoken)) {
+                showCustomAlert(`🎉 Xuất sắc! Phát âm rất chuẩn.\n(Bạn nói: "${currentSpoken}")`, "Kết quả Sprechen", "✅");
+            } else {
+                showCustomAlert(`❌ Chưa chính xác lắm, thử lại nhé!\n(Bạn nói: "${currentSpoken}"\nĐúng là: "${targetText}")`, "Kết quả Sprechen", "🔄");
+            }
         }
     };
 
@@ -148552,7 +148573,7 @@ function startSpeechPractice(targetText) {
         console.error("Speech Recognition Error:", event.error);
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
             showCustomAlert(
-                "Trình duyệt Brave/Firefox hiện tại chặn dịch vụ nhận diện giọng nói của Google.\nVui lòng chuyển sang dùng Google Chrome hoặc Microsoft Edge để sử dụng tính năng này!", 
+                "Trình duyệt Brave đang chặn dịch vụ nhận diện giọng nói của Google.\nVui lòng mở trang web này bằng Google Chrome hoặc Microsoft Edge để sử dụng tính năng luyện nói!", 
                 "Lỗi Dịch vụ Giọng nói", 
                 "⚠️"
             );
