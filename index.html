@@ -148522,7 +148522,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 300);
 });
 
-// === TÍNH NĂNG LUYỆN NÓI CHO CÂU DÀI (GHI ÂM LIÊN TỤC KHÔNG BỊ NGẮT) ===
+// === TÍNH NĂNG LUYỆN NÓI (TINH CHỈNH KHOẢNG NGHỈ 0.5 - 0.8S) ===
 function startSpeechPractice() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -148535,16 +148535,16 @@ function startSpeechPractice() {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'de-DE'; // Chuẩn tiếng Đức
-    recognition.interimResults = true; // Hiển thị chữ chạy trực tiếp theo thời gian thực
-    recognition.continuous = true; // Cho phép nói câu dài, không tự ngắt khi dừng hít thở ngắn
+    recognition.interimResults = true; // Hiển thị trực tiếp
+    recognition.continuous = true; // Cho phép giữ micro mở khi có khoảng nghỉ ngắn (0.5 - 0.8s)
     recognition.maxAlternatives = 1;
 
     const oldPlaceholder = inputField.placeholder;
-    inputField.placeholder = "🎤 Đang lắng nghe câu dài... Hãy nói thoải mái!";
+    inputField.placeholder = "🎤 Đang lắng nghe... (Hãy nói tự nhiên)";
     inputField.style.borderColor = "#38bdf8";
-    inputField.value = ""; // Xóa trắng ô để bắt đầu nói
+    inputField.value = "";
 
-    let finalTranscript = ''; // Biến cộng dồn các đoạn của câu dài
+    let finalTranscript = '';
 
     recognition.onresult = (event) => {
         let interimTranscript = '';
@@ -148557,7 +148557,6 @@ function startSpeechPractice() {
             }
         }
 
-        // Cập nhật gộp phần đã nói xong và phần đang nhận diện vào ô nhập liệu
         inputField.value = (finalTranscript + interimTranscript).trim();
     };
 
