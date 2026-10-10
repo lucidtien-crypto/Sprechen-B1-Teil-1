@@ -148571,16 +148571,28 @@ function startSpeechPractice(targetText) {
 
     recognition.onerror = (event) => {
         console.error("Speech Recognition Error:", event.error);
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        if (event.error === 'network') {
             showCustomAlert(
-                "Trình duyệt Brave đang chặn dịch vụ nhận diện giọng nói của Google.\nVui lòng mở trang web này bằng Google Chrome hoặc Microsoft Edge để sử dụng tính năng luyện nói!", 
-                "Lỗi Dịch vụ Giọng nói", 
+                "Lỗi kết nối mạng (Network Error).\nTrình duyệt không thể kết nối tới dịch vụ nhận diện giọng nói của Google. Hãy kiểm tra lại mạng hoặc tường lửa!", 
+                "Lỗi Mạng", 
+                "🌐"
+            );
+        } else if (event.error === 'aborted') {
+            showCustomAlert(
+                "Phiên ghi âm bị hủy (Aborted).\nCó thể micro đang bị ứng dụng khác (như Zoom, Discord hoặc tab khác) chiếm quyền. Hãy đóng bớt và thử lại!", 
+                "Micro bị hủy", 
+                "🎙️"
+            );
+        } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            showCustomAlert(
+                "Trình duyệt đang chặn dịch vụ nhận diện giọng nói.\nVui lòng mở trang web bằng Google Chrome hoặc Microsoft Edge!", 
+                "Lỗi Quyền", 
                 "⚠️"
             );
         } else if (event.error === 'no-speech') {
             showCustomAlert("Chưa ghi nhận được âm thanh. Hãy thử đọc to và rõ ràng hơn nhé!", "Thử lại", "🎙️");
         } else {
-            showCustomAlert("Lỗi micro hoặc nhận diện giọng nói: " + event.error, "Lỗi Micro", "🎙️");
+            showCustomAlert("Lỗi nhận diện giọng nói: " + event.error, "Lỗi Micro", "🎙️");
         }
     };
 
