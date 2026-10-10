@@ -148522,7 +148522,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 300);
 });
 
-
 // === TÍNH NĂNG LUYỆN NÓI (SPRECHEN-CHECK) ===
 function startSpeechPractice(targetText) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -148550,12 +148549,22 @@ function startSpeechPractice(targetText) {
     };
 
     recognition.onerror = (event) => {
-        showCustomAlert("Không nhận diện được giọng nói. Hãy kiểm tra quyền Micro của trình duyệt!", "Lỗi Micro", "🎙️");
+        console.error("Speech Recognition Error:", event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            showCustomAlert(
+                "Trình duyệt Brave/Firefox hiện tại chặn dịch vụ nhận diện giọng nói của Google.\nVui lòng chuyển sang dùng Google Chrome hoặc Microsoft Edge để sử dụng tính năng này!", 
+                "Lỗi Dịch vụ Giọng nói", 
+                "⚠️"
+            );
+        } else if (event.error === 'no-speech') {
+            showCustomAlert("Chưa ghi nhận được âm thanh. Hãy thử đọc to và rõ ràng hơn nhé!", "Thử lại", "🎙️");
+        } else {
+            showCustomAlert("Lỗi micro hoặc nhận diện giọng nói: " + event.error, "Lỗi Micro", "🎙️");
+        }
     };
 
     recognition.start();
 }
-
 
 
 
