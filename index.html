@@ -148522,7 +148522,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 300);
 });
 
-// === TÍNH NĂNG LUYỆN NÓI (SPRECHEN-CHECK KHÔNG BỊ CHẶN MODAL) ===
+// === TÍNH NĂNG LUYỆN NÓI (HIỂN THỊ LIVE TRỰC TIẾP) ===
 function startSpeechPractice(targetText) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -148535,16 +148535,8 @@ function startSpeechPractice(targetText) {
     recognition.interimResults = true; // Bật hiển thị chữ theo thời gian thực
     recognition.maxAlternatives = 1;
 
-    // Dùng console log hoặc đổi tạm chữ trên nút/giao diện thay vì hiện popup chặn
-    console.log("🎤 Đang lắng nghe... Hãy đọc to câu tiếng Đức:", targetText);
-
-    // Hiển thị một khung hướng dẫn nhỏ không gây phiền
-    showCustomAlert("🎤 Đang nghe... Hãy đọc to câu tiếng Đức ngay bây giờ!", "Sprechen-Check", "🗣️");
-    
-    // Tự động ẩn bảng thông báo sau 0.5 giây để bạn có thể thoải mái đọc mà không bị che màn hình
-    setTimeout(() => {
-        closeCustomAlert();
-    }, 600);
+    // Hiển thị khung popup trạng thái ban đầu và GIỮ NGUYÊN (không tự đóng)
+    showCustomAlert("🎤 Đang lắng nghe... Hãy nói câu tiếng Đức của bạn!<br><b id='live-speech-text' style='color: #38bdf8; font-size: 18px; margin-top: 10px; display: inline-block;'>...</b>", "Sprechen-Check (Live)", "🗣️");
 
     recognition.onresult = (event) => {
         let interimText = '';
@@ -148559,9 +148551,14 @@ function startSpeechPractice(targetText) {
         }
 
         const currentSpoken = (finalText || interimText).toLowerCase();
-        console.log("Đang nhận diện:", currentSpoken);
+        
+        // Cập nhật chữ trực tiếp lên màn hình popup theo thời gian thực
+        const liveEl = document.getElementById('live-speech-text');
+        if (liveEl) {
+            liveEl.innerText = `"${currentSpoken}"`;
+        }
 
-        // Khi bạn đọc xong câu
+        // Khi bạn đọc xong câu (final)
         if (finalText) {
             const cleanTarget = targetText.toLowerCase().replace(/[.,!?:;()[\]"']/g, '');
             if (currentSpoken.includes(cleanTarget) || cleanTarget.includes(currentSpoken)) {
@@ -148575,7 +148572,7 @@ function startSpeechPractice(targetText) {
     recognition.onerror = (event) => {
         console.error("Speech Recognition Error:", event.error);
         if (event.error === 'no-speech') {
-            showCustomAlert("Không nghe thấy giọng nói. Hãy kiểm tra xem Micro có đang bị bật công tắc mute (tắt tiếng) không nhé!", "Không có tiếng", "🎙️");
+            showCustomAlert("Không nghe thấy giọng nói. Hãy thử đọc to và rõ ràng hơn nhé!", "Không có tiếng", "🎙️");
         } else if (event.error === 'not-allowed') {
             showCustomAlert("Trình duyệt đang bị chặn quyền micro!", "Lỗi Quyền", "⚠️");
         } else {
