@@ -148527,7 +148527,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 
-// Biến toàn cục để quản lý phiên ghi âm (tránh mở trùng lặp)
+// Biến toàn cục quản lý phiên nhận diện
 let activeRecognition = null;
 
 function startSpeechPractice() {
@@ -148540,57 +148540,69 @@ function startSpeechPractice() {
     const inputField = document.getElementById('ans-input');
     if (!inputField) return;
 
-    // 1. Nếu đang thu âm mà bấm lại -> Tắt micro ngay lập tức (Chức năng Toggle)
+    // Màu sắc dịu mắt (Màu xanh ngọc dịu nhẹ matching với giao diện)
+    const activeColor = "#10b981"; 
+    const defaultColor = "var(--border)";
+
+    // 1. Nếu đang bật mà bấm lại nút Sprechen -> Tắt ngay lập tức
     if (activeRecognition) {
         activeRecognition.stop();
         activeRecognition = null;
-        inputField.placeholder = "Nhập câu trả lời hoặc bấm Sprechen...";
-        inputField.style.borderColor = "var(--border)";
+        inputField.placeholder = "Nhập câu trả lời...";
+        inputField.style.borderColor = defaultColor;
         return;
     }
 
     const recognition = new SpeechRecognition();
-    activeRecognition = recognition; // Lưu lại phiên đang chạy
+    activeRecognition = recognition;
 
-    recognition.lang = 'de-DE'; // Chuẩn tiếng Đức
-    recognition.interimResults = true; // Hiển thị chữ chạy trực tiếp
-    recognition.continuous = true; // Giữ micro mở với khoảng nghỉ ngắn
+    recognition.lang = 'de-DE';
+    recognition.interimResults = true;
+    recognition.continuous = true;
     recognition.maxAlternatives = 1;
 
-    // 2. RESET HOÀN TOÀN TỪ CŨ khi bắt đầu từ/câu mới
-    let finalTranscript = ''; 
-    inputField.value = ""; // Xóa sạch ô nhập liệu
+    // 2. CLEAR SẠCH Ô NHẬP LIỆU BAN ĐẦU
+    inputField.value = "";
+    inputField.placeholder = "🎙️ Đang nghe... (Bấm Sprechen để dừng)";
+    inputField.style.borderColor = activeColor; // Viền xanh ngọc mát mắt
 
-    // Đổi giao diện báo hiệu ĐÃ BẬT MICRO
-    inputField.placeholder = "🔴 Đang nghe... (Bấm nút Sprechen lần nữa để dừng)";
-    inputField.style.borderColor = "#ef4444"; // Đổi sang màu đỏ/nổi bật để báo hiệu đang thu âm
+    // Mảng lưu trữ các đoạn từ đã nhận diện chính xác để chống lặp
+    let finalPhrases = [];
 
     recognition.onresult = (event) => {
-        let interimTranscript = '';
+        let interimText = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript.trim();
+            
             if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript + ' ';
+                // CHỐNG LẶP: Chỉ thêm vào nếu đoạn từ mới chưa tồn tại ở cuối danh sách
+                if (finalPhrases.length === 0 || finalPhrases[finalPhrases.length - 1] !== transcript) {
+                    finalPhrases.push(transcript);
+                }
             } else {
-                interimTranscript += event.results[i][0].transcript;
+                interimText = transcript;
             }
         }
 
-        // Cập nhật văn bản mới nhất vào ô nhập
-        inputField.value = (finalTranscript + interimTranscript).trim();
+        // Ghép các cụm từ hoàn chỉnh + từ đang nói dở
+        const fullSpokenText = [...finalPhrases, interimText].filter(Boolean).join(' ');
+        
+        // Cập nhật ô nhập liệu
+        inputField.value = fullSpokenText;
     };
 
     recognition.onerror = (event) => {
         console.error("Speech error:", event.error);
         activeRecognition = null;
-        inputField.placeholder = "Lỗi micro. Thử bấm lại nhé!";
-        inputField.style.borderColor = "var(--border)";
+        inputField.placeholder = "Nhập câu trả lời...";
+        inputField.style.borderColor = defaultColor;
     };
 
     recognition.onend = () => {
         activeRecognition = null;
-        inputField.placeholder = "Nhập câu trả lời hoặc bấm Sprechen...";
-        inputField.style.borderColor = "var(--border)";
+        inputField.placeholder = "Nhập câu trả lời...";
+        inputField.style.borderColor = defaultColor;
     };
 
     recognition.start();
