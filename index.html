@@ -148522,21 +148522,29 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 300);
 });
 
-// === TÍNH NĂNG LUYỆN NÓI (SPRECHEN-CHECK VỚI LIVE TEXT) ===
+// === TÍNH NĂNG LUYỆN NÓI (SPRECHEN-CHECK KHÔNG BỊ CHẶN MODAL) ===
 function startSpeechPractice(targetText) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        showCustomAlert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Hãy dùng Google Chrome hoặc Safari nhé!", "Không hỗ trợ", "⚠️");
+        showCustomAlert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Hãy dùng Google Chrome nhé!", "Không hỗ trợ", "⚠️");
         return;
     }
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'de-DE'; // Đặt chuẩn tiếng Đức
-    recognition.interimResults = true; // Bật hiển thị chữ theo thời gian thực (giống Google Translate)
+    recognition.interimResults = true; // Bật hiển thị chữ theo thời gian thực
     recognition.maxAlternatives = 1;
 
-    // Hiển thị khung popup ban đầu
-    showCustomAlert("🎤 Đang lắng nghe... Hãy nói câu tiếng Đức của bạn!", "Sprechen-Check (Live)", "🗣️");
+    // Dùng console log hoặc đổi tạm chữ trên nút/giao diện thay vì hiện popup chặn
+    console.log("🎤 Đang lắng nghe... Hãy đọc to câu tiếng Đức:", targetText);
+
+    // Hiển thị một khung hướng dẫn nhỏ không gây phiền
+    showCustomAlert("🎤 Đang nghe... Hãy đọc to câu tiếng Đức ngay bây giờ!", "Sprechen-Check", "🗣️");
+    
+    // Tự động ẩn bảng thông báo sau 0.5 giây để bạn có thể thoải mái đọc mà không bị che màn hình
+    setTimeout(() => {
+        closeCustomAlert();
+    }, 600);
 
     recognition.onresult = (event) => {
         let interimText = '';
@@ -148551,14 +148559,9 @@ function startSpeechPractice(targetText) {
         }
 
         const currentSpoken = (finalText || interimText).toLowerCase();
-        
-        // Cập nhật chữ hiện trực tiếp lên popup thông báo theo thời gian thực
-        const messageBox = document.getElementById('alert-message');
-        if (messageBox) {
-            messageBox.innerHTML = `🎤 Đang nghe bạn nói:<br><b style="color: #38bdf8; font-size: 17px; margin-top: 6px; display: inline-block;">"${currentSpoken}"</b>`;
-        }
+        console.log("Đang nhận diện:", currentSpoken);
 
-        // Khi bạn đọc xong câu (final)
+        // Khi bạn đọc xong câu
         if (finalText) {
             const cleanTarget = targetText.toLowerCase().replace(/[.,!?:;()[\]"']/g, '');
             if (currentSpoken.includes(cleanTarget) || cleanTarget.includes(currentSpoken)) {
@@ -148571,28 +148574,12 @@ function startSpeechPractice(targetText) {
 
     recognition.onerror = (event) => {
         console.error("Speech Recognition Error:", event.error);
-        if (event.error === 'network') {
-            showCustomAlert(
-                "Lỗi kết nối mạng (Network Error).\nTrình duyệt không thể kết nối tới dịch vụ nhận diện giọng nói của Google. Hãy kiểm tra lại mạng hoặc tường lửa!", 
-                "Lỗi Mạng", 
-                "🌐"
-            );
-        } else if (event.error === 'aborted') {
-            showCustomAlert(
-                "Phiên ghi âm bị hủy (Aborted).\nCó thể micro đang bị ứng dụng khác (như Zoom, Discord hoặc tab khác) chiếm quyền. Hãy đóng bớt và thử lại!", 
-                "Micro bị hủy", 
-                "🎙️"
-            );
-        } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            showCustomAlert(
-                "Trình duyệt đang chặn dịch vụ nhận diện giọng nói.\nVui lòng mở trang web bằng Google Chrome hoặc Microsoft Edge!", 
-                "Lỗi Quyền", 
-                "⚠️"
-            );
-        } else if (event.error === 'no-speech') {
-            showCustomAlert("Chưa ghi nhận được âm thanh. Hãy thử đọc to và rõ ràng hơn nhé!", "Thử lại", "🎙️");
+        if (event.error === 'no-speech') {
+            showCustomAlert("Không nghe thấy giọng nói. Hãy kiểm tra xem Micro có đang bị bật công tắc mute (tắt tiếng) không nhé!", "Không có tiếng", "🎙️");
+        } else if (event.error === 'not-allowed') {
+            showCustomAlert("Trình duyệt đang bị chặn quyền micro!", "Lỗi Quyền", "⚠️");
         } else {
-            showCustomAlert("Lỗi nhận diện giọng nói: " + event.error, "Lỗi Micro", "🎙️");
+            showCustomAlert("Lỗi nhận diện: " + event.error, "Lỗi Micro", "🎙️");
         }
     };
 
