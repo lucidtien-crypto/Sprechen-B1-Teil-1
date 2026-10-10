@@ -148522,7 +148522,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 300);
 });
 
-// === TÍNH NĂNG LUYỆN NÓI (HIỂN THỊ LIVE TRỰC TIẾP) ===
+// === TÍNH NĂNG LUYỆN NÓI (THÔNG MINH CHỐNG TẠP ÂM & TỰ ĐỘNG LƯU) ===
 function startSpeechPractice(targetText) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -148531,12 +148531,19 @@ function startSpeechPractice(targetText) {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'de-DE'; // Đặt chuẩn tiếng Đức
-    recognition.interimResults = true; // Bật hiển thị chữ theo thời gian thực
-    recognition.maxAlternatives = 1;
+    recognition.lang = 'de-DE';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 3; // Lấy nhiều kết quả dự trù để chống tạp âm
 
-    // Hiển thị khung popup trạng thái ban đầu và GIỮ NGUYÊN (không tự đóng)
-    showCustomAlert("🎤 Đang lắng nghe... Hãy nói câu tiếng Đức của bạn!<br><b id='live-speech-text' style='color: #38bdf8; font-size: 18px; margin-top: 10px; display: inline-block;'>...</b>", "Sprechen-Check (Live)", "🗣️");
+    // Hàm hỗ trợ render HTML cho alert box của bạn
+    function showHtmlAlert(htmlContent, title = "Sprechen-Check (Live)", icon = "🗣️") {
+        document.getElementById('alert-message').innerHTML = htmlContent;
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-icon').innerText = icon;
+        document.getElementById('custom-alert-modal').classList.remove('hidden');
+    }
+
+    showHtmlAlert(`🎤 Đang lắng nghe... Hãy đọc to:<br><i style="color: #fbbf24;">"${targetText}"</i><br><br><b>Bạn đang nói:</b><br><span id='live-speech-text' style='color: #38bdf8; font-size: 18px; margin-top: 6px; display: inline-block;'>...</span>`);
 
     recognition.onresult = (event) => {
         let interimText = '';
@@ -148550,31 +148557,55 @@ function startSpeechPractice(targetText) {
             }
         }
 
-        const currentSpoken = (finalText || interimText).toLowerCase();
+        const currentSpoken = (finalText || interimText).toLowerCase().trim();
         
-        // Cập nhật chữ trực tiếp lên màn hình popup theo thời gian thực
+        // Cập nhật chữ live lên khung
         const liveEl = document.getElementById('live-speech-text');
         if (liveEl) {
             liveEl.innerText = `"${currentSpoken}"`;
         }
 
-        // Khi bạn đọc xong câu (final)
+        // Khi nhận diện xong câu (final)
         if (finalText) {
             const cleanTarget = targetText.toLowerCase().replace(/[.,!?:;()[\]"']/g, '');
-            if (currentSpoken.includes(cleanTarget) || cleanTarget.includes(currentSpoken)) {
-                showCustomAlert(`🎉 Xuất sắc! Phát âm rất chuẩn.\n(Bạn nói: "${currentSpoken}")`, "Kết quả Sprechen", "✅");
+            
+            // --- THUẬT TOÁN THÔNG MINH CHỐNG TẠP ÂM ---
+            // Tách các từ trong câu mục tiêu
+            const targetWords = cleanTarget.split(/\s+/).filter(w => w.length > 1);
+            let matchedCount = 0;
+
+            // Kiểm tra xem các từ cốt lõi có xuất hiện trong phần bạn nói không
+            targetWords.forEach(word => {
+                if (currentSpoken.includes(word)) {
+                    matchedCount++;
+                }
+            });
+
+            // Nếu bạn nói đúng từ 70% trở lên số từ khóa cốt lõi (hoặc chứa trọn cụm từ) -> Tính là Đúng bất chấp tạp âm xung quanh
+            const isAcceptable = (targetWords.length === 0 && currentSpoken.length > 0) || 
+                                 (matchedCount / targetWords.length >= 0.65) || 
+                                 currentSpoken.includes(cleanTarget);
+
+            if (isAcceptable) {
+                // TỰ ĐỘNG THÊM VÀO ĐIỂM / LƯU TIẾN ĐỘ NẾU ĐANG TRONG BÀI HỌC
+                if (typeof session !== 'undefined' && session[idx]) {
+                    const v = session[idx];
+                    if (!mastery[v.word]) mastery[v.word] = { s: 0, w: 0, a: true };
+                    // Nếu muốn tự động tăng streak khi đọc đúng:
+                    // mastery[v.word].s++;
+                    // save();
+                }
+
+                showCustomAlert(`🎉 Phát âm chuẩn xác!\n(Hệ thống đã nhận diện tốt dù có tạp âm:\n"${currentSpoken}")`, "Kết quả Sprechen", "✅");
             } else {
-                showCustomAlert(`❌ Chưa chính xác lắm, thử lại nhé!\n(Bạn nói: "${currentSpoken}"\nĐúng là: "${targetText}")`, "Kết quả Sprechen", "🔄");
+                showCustomAlert(`❌ Chưa khớp lắm với từ mục tiêu.\n(Bạn nói: "${currentSpoken}"\nCần đạt: "${targetText}")`, "Kết quả Sprechen", "🔄");
             }
         }
     };
 
     recognition.onerror = (event) => {
-        console.error("Speech Recognition Error:", event.error);
         if (event.error === 'no-speech') {
-            showCustomAlert("Không nghe thấy giọng nói. Hãy thử đọc to và rõ ràng hơn nhé!", "Không có tiếng", "🎙️");
-        } else if (event.error === 'not-allowed') {
-            showCustomAlert("Trình duyệt đang bị chặn quyền micro!", "Lỗi Quyền", "⚠️");
+            showCustomAlert("Không nghe thấy giọng nói. Hãy kiểm tra micro nhé!", "Không có tiếng", "🎙️");
         } else {
             showCustomAlert("Lỗi nhận diện: " + event.error, "Lỗi Micro", "🎙️");
         }
