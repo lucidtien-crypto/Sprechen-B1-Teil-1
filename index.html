@@ -148522,7 +148522,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 300);
 });
 
-// === TÍNH NĂNG LUYỆN NÓI GỌN GÀNG (ĐIỀN TRỰC TIẾP VÀO Ô NHẬP) ===
+// === TÍNH NĂNG LUYỆN NÓI CHO CÂU DÀI (GHI ÂM LIÊN TỤC KHÔNG BỊ NGẮT) ===
 function startSpeechPractice() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -148536,29 +148536,29 @@ function startSpeechPractice() {
     const recognition = new SpeechRecognition();
     recognition.lang = 'de-DE'; // Chuẩn tiếng Đức
     recognition.interimResults = true; // Hiển thị chữ chạy trực tiếp theo thời gian thực
+    recognition.continuous = true; // Cho phép nói câu dài, không tự ngắt khi dừng hít thở ngắn
     recognition.maxAlternatives = 1;
 
-    // Đổi màu viền và placeholder nhẹ nhàng để báo hiệu đang nghe
     const oldPlaceholder = inputField.placeholder;
-    inputField.placeholder = "🎤 Đang lắng nghe bạn nói...";
+    inputField.placeholder = "🎤 Đang lắng nghe câu dài... Hãy nói thoải mái!";
     inputField.style.borderColor = "#38bdf8";
-    inputField.value = ""; // Xóa trắng ô để bạn nói từ mới
+    inputField.value = ""; // Xóa trắng ô để bắt đầu nói
+
+    let finalTranscript = ''; // Biến cộng dồn các đoạn của câu dài
 
     recognition.onresult = (event) => {
-        let interimText = '';
-        let finalText = '';
+        let interimTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
-                finalText += event.results[i][0].transcript;
+                finalTranscript += event.results[i][0].transcript + ' ';
             } else {
-                interimText += event.results[i][0].transcript;
+                interimTranscript += event.results[i][0].transcript;
             }
         }
 
-        // Điền trực tiếp những gì bạn đang đọc vào ô gõ chữ
-        const currentSpoken = (finalText || interimText).trim();
-        inputField.value = currentSpoken;
+        // Cập nhật gộp phần đã nói xong và phần đang nhận diện vào ô nhập liệu
+        inputField.value = (finalTranscript + interimTranscript).trim();
     };
 
     recognition.onerror = (event) => {
@@ -148568,7 +148568,6 @@ function startSpeechPractice() {
     };
 
     recognition.onend = () => {
-        // Trả lại trạng thái ô nhập sau khi nói xong
         inputField.placeholder = oldPlaceholder;
         inputField.style.borderColor = "var(--border)";
     };
