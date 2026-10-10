@@ -148522,7 +148522,14 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 300);
 });
 
-// === TÍNH NĂNG LUYỆN NÓI (TINH CHỈNH KHOẢNG NGHỈ 0.5 - 0.8S) ===
+
+
+
+
+
+// Biến toàn cục để quản lý phiên ghi âm (tránh mở trùng lặp)
+let activeRecognition = null;
+
 function startSpeechPractice() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -148533,18 +148540,30 @@ function startSpeechPractice() {
     const inputField = document.getElementById('ans-input');
     if (!inputField) return;
 
+    // 1. Nếu đang thu âm mà bấm lại -> Tắt micro ngay lập tức (Chức năng Toggle)
+    if (activeRecognition) {
+        activeRecognition.stop();
+        activeRecognition = null;
+        inputField.placeholder = "Nhập câu trả lời hoặc bấm Sprechen...";
+        inputField.style.borderColor = "var(--border)";
+        return;
+    }
+
     const recognition = new SpeechRecognition();
+    activeRecognition = recognition; // Lưu lại phiên đang chạy
+
     recognition.lang = 'de-DE'; // Chuẩn tiếng Đức
-    recognition.interimResults = true; // Hiển thị trực tiếp
-    recognition.continuous = true; // Cho phép giữ micro mở khi có khoảng nghỉ ngắn (0.5 - 0.8s)
+    recognition.interimResults = true; // Hiển thị chữ chạy trực tiếp
+    recognition.continuous = true; // Giữ micro mở với khoảng nghỉ ngắn
     recognition.maxAlternatives = 1;
 
-    const oldPlaceholder = inputField.placeholder;
-    inputField.placeholder = "🎤 Đang lắng nghe... (Hãy nói tự nhiên)";
-    inputField.style.borderColor = "#38bdf8";
-    inputField.value = "";
+    // 2. RESET HOÀN TOÀN TỪ CŨ khi bắt đầu từ/câu mới
+    let finalTranscript = ''; 
+    inputField.value = ""; // Xóa sạch ô nhập liệu
 
-    let finalTranscript = '';
+    // Đổi giao diện báo hiệu ĐÃ BẬT MICRO
+    inputField.placeholder = "🔴 Đang nghe... (Bấm nút Sprechen lần nữa để dừng)";
+    inputField.style.borderColor = "#ef4444"; // Đổi sang màu đỏ/nổi bật để báo hiệu đang thu âm
 
     recognition.onresult = (event) => {
         let interimTranscript = '';
@@ -148557,17 +148576,20 @@ function startSpeechPractice() {
             }
         }
 
+        // Cập nhật văn bản mới nhất vào ô nhập
         inputField.value = (finalTranscript + interimTranscript).trim();
     };
 
     recognition.onerror = (event) => {
         console.error("Speech error:", event.error);
-        inputField.placeholder = oldPlaceholder;
+        activeRecognition = null;
+        inputField.placeholder = "Lỗi micro. Thử bấm lại nhé!";
         inputField.style.borderColor = "var(--border)";
     };
 
     recognition.onend = () => {
-        inputField.placeholder = oldPlaceholder;
+        activeRecognition = null;
+        inputField.placeholder = "Nhập câu trả lời hoặc bấm Sprechen...";
         inputField.style.borderColor = "var(--border)";
     };
 
